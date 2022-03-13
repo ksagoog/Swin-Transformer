@@ -130,6 +130,8 @@ _C.TRAIN.OPTIMIZER.MOMENTUM = 0.9
 # Augmentation settings
 # -----------------------------------------------------------------------------
 _C.AUG = CN()
+# Whether to use pyramid adversarial training
+_C.AUG.PYRAMID_ADVERSARIAL_TRAINING = False
 # Color jitter factor
 _C.AUG.COLOR_JITTER = 0.4
 # Use AutoAugment policy. "v0" or "original"
@@ -235,6 +237,9 @@ def update_config(config, args):
         config.EVAL_MODE = True
     if args.throughput:
         config.THROUGHPUT_MODE = True
+            
+    if args.pyramid_adversarial_training:
+        config.AUG.PYRAMID_ADVERSARIAL_TRAINING = True
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank

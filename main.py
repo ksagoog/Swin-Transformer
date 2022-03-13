@@ -4,7 +4,6 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ze Liu
 # --------------------------------------------------------
-
 import os
 import time
 import random
@@ -19,6 +18,7 @@ import torch.distributed as dist
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.utils import accuracy, AverageMeter
 
+import pyramid_adversarial_training
 from config import get_config
 from models import build_model
 from data import build_loader
@@ -65,6 +65,7 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
     parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
+    parser.add_argument('--pyramid_adversarial_training', action='store_true', help='Do pyramid adversarial training.')
 
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
@@ -166,7 +167,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
     start = time.time()
     end = time.time()
-    for idx, (samples, targets) in enumerate(data_loader):
+    for idx, (samples, targets) in enumerate(data_loader):        
         samples = samples.cuda(non_blocking=True)
         targets = targets.cuda(non_blocking=True)
 
@@ -174,6 +175,21 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             samples, targets = mixup_fn(samples, targets)
 
         outputs = model(samples)
+        
+        random_targets = torch.randint_like(targets, low=0, high=1000)
+        
+        if config.AUG.PYRAMID_ADVERSARIAL_TRAINING:
+          perturbed_samples = pyramid_adversarial_training.get_attacked_image(
+            model=model,
+            # Decrease the loss on a random target.
+            loss_fn=lambda pred: criterion(pred, random_targets),
+            image=samples
+          )
+          perturbed_outputs = model(perturbed_samples)
+        
+          samples = torch.cat([samples, perturbed_samples], dim=0)
+          targets = torch.cat([targets, targets], dim=0)
+          outputs = torch.cat([outputs, perturbed_outputs], dim=0)
 
         if config.TRAIN.ACCUMULATION_STEPS > 1:
             loss = criterion(outputs, targets)
