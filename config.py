@@ -238,8 +238,7 @@ def update_config(config, args):
     if args.throughput:
         config.THROUGHPUT_MODE = True
             
-    if args.pyramid_adversarial_training:
-        config.AUG.PYRAMID_ADVERSARIAL_TRAINING = True
+    config.AUG.PYRAMID_ADVERSARIAL_TRAINING = True if args.pyramid_adversarial_training == 'yes' else False
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank

@@ -65,12 +65,13 @@ def parse_option():
     parser.add_argument('--tag', help='tag of experiment')
     parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
-    parser.add_argument('--pyramid_adversarial_training', type=bool, help='Do pyramid adversarial training.')
+    parser.add_argument('--pyramid_adversarial_training', type=str, default='no', help='Do or do not do pyramid adversarial training.')
 
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
 
     args, unparsed = parser.parse_known_args()
+    assert args.pyramid_adversarial_training in ['yes', 'no']
 
     config = get_config(args)
 
@@ -178,6 +179,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
         
         random_targets = torch.randint_like(targets, low=0, high=1000)
         
+        # print(f"pyramid_adversarial_training={config.AUG.PYRAMID_ADVERSARIAL_TRAINING}")
         if config.AUG.PYRAMID_ADVERSARIAL_TRAINING:
           perturbed_samples = pyramid_adversarial_training.get_attacked_image(
             model=model,
