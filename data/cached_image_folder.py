@@ -91,12 +91,13 @@ class DatasetFolder(data.Dataset):
 
     def __init__(self, root, loader, extensions, ann_file='', img_prefix='', transform=None, target_transform=None,
                  cache_mode="no"):
-        # image folder mode
+        # image folder mode        
         if ann_file == '':
             _, class_to_idx = find_classes(root)
             samples = make_dataset(root, class_to_idx, extensions)
         # zip mode
         else:
+            print(root)
             samples = make_dataset_with_ann(os.path.join(root, ann_file),
                                             os.path.join(root, img_prefix),
                                             extensions)
